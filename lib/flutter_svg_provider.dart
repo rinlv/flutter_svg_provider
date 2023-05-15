@@ -109,27 +109,10 @@ class Svg extends ImageProvider<SvgImageKey> {
 
   static Future<ImageInfo> _loadAsync(SvgImageKey key) async {
     final String rawSvg = await _getSvgString(key);
-    final DrawableRoot svgRoot = await svg.fromSvgString(rawSvg, key.path);
-    final ui.Picture picture = svgRoot.toPicture(
-      size: Size(
-        key.pixelWidth.toDouble(),
-        key.pixelHeight.toDouble(),
-      ),
-      clipToViewBox: false,
-      colorFilter: ColorFilter.mode(
-        getFilterColor(key.color),
-        BlendMode.srcATop,
-      ),
-    );
-    final ui.Image image = await picture.toImage(
-      key.pixelWidth,
-      key.pixelHeight,
-    );
-
-    return ImageInfo(
-      image: image,
-      scale: key.scale,
-    );
+    final PictureInfo pictureInfo = await vg.loadPicture(SvgStringLoader(rawSvg), null);
+    final ui.Image image = await pictureInfo.picture.toImage(key.pixelWidth.round(), key.pixelHeight.round());
+    pictureInfo.picture.dispose();
+    return ImageInfo(image: image, scale: key.scale);
   }
 
   // Note: == and hashCode not overrided as changes in properties
@@ -202,8 +185,7 @@ class SvgImageKey {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(path, pixelWidth, pixelHeight, scale, source, svgGetter);
+  int get hashCode => Object.hash(path, pixelWidth, pixelHeight, scale, source, svgGetter);
 
   @override
   String toString() => '${objectRuntimeType(this, 'SvgImageKey')}'
